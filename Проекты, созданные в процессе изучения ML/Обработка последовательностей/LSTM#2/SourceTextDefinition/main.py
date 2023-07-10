@@ -67,7 +67,6 @@ def predict_number_of_text(input_str):
     prediction = model.predict(data)
     return prediction.argmax(axis=1)
 
-
 while True:
     chunk = input('Enter a chunk of text: ')
     print('The chunk of text from a text ' + str(predict_number_of_text(chunk)))
