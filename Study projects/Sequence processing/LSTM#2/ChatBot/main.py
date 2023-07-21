@@ -18,6 +18,9 @@ from keras.preprocessing.text import Tokenizer
 #                                                decoder_input],
 #                                        outputs=decoder_dense_output)
 
+lstm_neurons_1 = 250
+lstm_neurons_2 = 500
+lstm_neurons_3 = 1000
 
 class EncoderState:
     encoder_hidden_states = []
@@ -175,11 +178,11 @@ def init_encoder_decoder_model():
                                    encoder_reply_index_embedded_output,
                                    encoder_person_index_input_mask])
 
-    encoder_lstm_1 = layers.LSTM(units=300, input_shape=(None,), return_sequences=True, return_state=True,
+    encoder_lstm_1 = layers.LSTM(units=lstm_neurons_1, input_shape=(None,), return_sequences=True, return_state=True,
                                  name='encoder_lstm_1')
-    encoder_lstm_2 = layers.LSTM(units=150, input_shape=(None,), return_sequences=True, return_state=True,
+    encoder_lstm_2 = layers.LSTM(units=lstm_neurons_2, input_shape=(None,), return_sequences=True, return_state=True,
                                  name='encoder_lstm_2')
-    encoder_lstm_3 = layers.LSTM(units=100, input_shape=(None,), return_state=True, name='encoder_lstm_3')
+    encoder_lstm_3 = layers.LSTM(units=lstm_neurons_3, input_shape=(None,), return_state=True, name='encoder_lstm_3')
 
     encoder_lstm_output_1, encoder_state_h_1, encoder_state_c_1 = encoder_lstm_1(merged)
     encoder_lstm_output_2, encoder_state_h_2, encoder_state_c_2 = encoder_lstm_2(encoder_lstm_output_1)
@@ -192,11 +195,11 @@ def init_encoder_decoder_model():
 
     decoder_input = layers.Input(shape=(None, decoder_output_size), name='decoder_input')
 
-    decoder_lstm_1 = layers.LSTM(units=300, input_shape=(None,), return_sequences=True, return_state=True,
+    decoder_lstm_1 = layers.LSTM(units=lstm_neurons_1, input_shape=(None,), return_sequences=True, return_state=True,
                                  name='decoder_lstm_1')
-    decoder_lstm_2 = layers.LSTM(units=150, input_shape=(None,), return_sequences=True, return_state=True,
+    decoder_lstm_2 = layers.LSTM(units=lstm_neurons_2, input_shape=(None,), return_sequences=True, return_state=True,
                                  name='decoder_lstm_2')
-    decoder_lstm_3 = layers.LSTM(units=100, input_shape=(None,), return_sequences=True, return_state=True,
+    decoder_lstm_3 = layers.LSTM(units=lstm_neurons_3, input_shape=(None,), return_sequences=True, return_state=True,
                                  name='decoder_lstm_3')
     decoder_dense = layers.Dense(units=decoder_output_size, activation='sigmoid', name='decoder_dense')
 
@@ -236,16 +239,21 @@ else:
 
 decoder_encoder_chat_bot.summary()
 
-decoder_encoder_chat_bot.compile(optimizer="adam", loss='mse')
+decoder_encoder_chat_bot.compile(optimizer=keras.optimizers.Adam(0.0001), loss='mse')
 
 is_need_learn = input('Enter 1 if you need to learn model')
 if is_need_learn == '1':
+    path_to_best_model = input('Enter a path to save a best model')
+    min_loss = 9999999
     epoch = 0
     while True:
-        decoder_encoder_chat_bot.fit([words_train_input_tensor, word_index_train_input_tensor, reply_index_train_input_tensor, person_id_train_input_tensor, decoder_words_train_input_tensor], decoder_words_train_output_tensor,
-                                batch_size=32, epochs=30)
+        history = decoder_encoder_chat_bot.fit([words_train_input_tensor, word_index_train_input_tensor, reply_index_train_input_tensor, person_id_train_input_tensor, decoder_words_train_input_tensor], decoder_words_train_output_tensor,
+                                batch_size=32, epochs=5)
+        if history.history['loss'][-1] < min_loss:
+            min_loss = history.history['loss'][-1]
+            decoder_encoder_chat_bot.save(path_to_best_model)
         epoch += 1
-        if epoch % 100 == 0:
+        if epoch % 1 == 0:
             decoder_encoder_chat_bot.save(path)
 
         to_stop_learning = False
@@ -264,14 +272,14 @@ if is_need_to_save == '1':
     print('Saving complete')
 
 
-r_encoder_input_state_h_1 = layers.Input(shape=(300,))
-r_encoder_input_state_c_1 = layers.Input(shape=(300,))
+r_encoder_input_state_h_1 = layers.Input(shape=(lstm_neurons_1,))
+r_encoder_input_state_c_1 = layers.Input(shape=(lstm_neurons_1,))
 
-r_encoder_input_state_h_2 = layers.Input(shape=(150,))
-r_encoder_input_state_c_2 = layers.Input(shape=(150,))
+r_encoder_input_state_h_2 = layers.Input(shape=(lstm_neurons_2,))
+r_encoder_input_state_c_2 = layers.Input(shape=(lstm_neurons_2,))
 
-r_encoder_input_state_h_3 = layers.Input(shape=(100,))
-r_encoder_input_state_c_3 = layers.Input(shape=(100,))
+r_encoder_input_state_h_3 = layers.Input(shape=(lstm_neurons_3,))
+r_encoder_input_state_c_3 = layers.Input(shape=(lstm_neurons_3,))
 
 encoder_input_states_1 = [r_encoder_input_state_h_1, r_encoder_input_state_c_1]
 encoder_input_states_2 = [r_encoder_input_state_h_2, r_encoder_input_state_c_2]
@@ -303,14 +311,14 @@ chat_bot_encoder = keras.Model(inputs=[decoder_encoder_chat_bot.get_layer('encod
                                        encoder_input_states],
                                outputs=r_encoder_states)
 
-r_decoder_input_state_h_1 = layers.Input(shape=(300,))
-r_decoder_input_state_c_1 = layers.Input(shape=(300,))
+r_decoder_input_state_h_1 = layers.Input(shape=(lstm_neurons_1,))
+r_decoder_input_state_c_1 = layers.Input(shape=(lstm_neurons_1,))
 
-r_decoder_input_state_h_2 = layers.Input(shape=(150,))
-r_decoder_input_state_c_2 = layers.Input(shape=(150,))
+r_decoder_input_state_h_2 = layers.Input(shape=(lstm_neurons_2,))
+r_decoder_input_state_c_2 = layers.Input(shape=(lstm_neurons_2,))
 
-r_decoder_input_state_h_3 = layers.Input(shape=(100,))
-r_decoder_input_state_c_3 = layers.Input(shape=(100,))
+r_decoder_input_state_h_3 = layers.Input(shape=(lstm_neurons_3,))
+r_decoder_input_state_c_3 = layers.Input(shape=(lstm_neurons_3,))
 
 r_decoder_input_states_1 = [r_decoder_input_state_h_1, r_decoder_input_state_c_1]
 r_decoder_input_states_2 = [r_decoder_input_state_h_2, r_decoder_input_state_c_2]
@@ -368,11 +376,11 @@ def get_answer(prompt, encoder_state_container, max_answer_length=100):
 
     return answer
 
-encoder_state_container = EncoderState([[tf.zeros((1, 300)), tf.zeros((1, 300))], [tf.zeros((1, 150)), tf.zeros((1, 150))], [tf.zeros((1, 100)), tf.zeros((1, 100))]])
+encoder_state_container = EncoderState([[tf.zeros((1, lstm_neurons_1)), tf.zeros((1, lstm_neurons_1))], [tf.zeros((1, lstm_neurons_2)), tf.zeros((1, lstm_neurons_2))], [tf.zeros((1, lstm_neurons_3)), tf.zeros((1, lstm_neurons_3))]])
 
 while True:
     your_statement = input('You: ')
     if your_statement == '/reload_states':
-        encoder_state_container = EncoderState([[tf.zeros((1, 300)), tf.zeros((1, 300))], [tf.zeros((1, 150)), tf.zeros((1, 150))], [tf.zeros((1, 100)), tf.zeros((1, 100))]])
+        encoder_state_container = EncoderState([[tf.zeros((1, lstm_neurons_1)), tf.zeros((1, lstm_neurons_1))], [tf.zeros((1, lstm_neurons_2)), tf.zeros((1, lstm_neurons_2))], [tf.zeros((1, lstm_neurons_3)), tf.zeros((1, lstm_neurons_3))]])
     chat_bot_statement = get_answer(your_statement, encoder_state_container)
     print(f'ChatBot: {chat_bot_statement}')
