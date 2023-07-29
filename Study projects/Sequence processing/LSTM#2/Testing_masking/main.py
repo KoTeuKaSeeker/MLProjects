@@ -20,7 +20,11 @@ def get_input_data(count_samples, max_count_time_steps, input_dim, masking_value
     return input_data, testing_data
 
 
-input_dim = 10
+def testing_masking(model:keras.Model, input_data):
+    masked_input_data = model.get_layer("masking_layer")(input_data)
+    print('kek')
+
+input_dim = 1
 lstm_dim = 20
 dense_dim = 1
 
@@ -32,11 +36,13 @@ input_data, testing_data = get_input_data(count_samples, max_count_time_steps, i
 output_data = tf.constant(np.random.rand(count_samples, dense_dim))
 
 input_layer = layers.Input(shape=(None, input_dim))
-masking_layer = layers.Masking(mask_value=masking_value)(input_layer)
+masking_layer = layers.Masking(mask_value=masking_value, name="masking_layer")(input_layer)
 lstm_layer = layers.LSTM(units=lstm_dim, input_shape=(None,))(masking_layer)
 dense_layer = layers.Dense(units=dense_dim, activation="sigmoid")(lstm_layer)
 
 model = keras.Model(inputs=input_layer, outputs=dense_layer)
+
+testing_masking(model, input_data)
 
 model.compile(optimizer="adam", loss="mse")
 model.fit(input_data, output_data, batch_size=32, epochs=500)
