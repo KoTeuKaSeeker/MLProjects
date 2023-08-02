@@ -79,7 +79,7 @@ def show_image_tensor(image_tensor):
 input_dim = (8, 8, 8)
 
 images = load_image_dataset("dataset", 128, 128)
-images = tf.stack(tf.unstack(images, axis=0)[:166])
+images = tf.stack(tf.unstack(images, axis=0)[:images.shape[0]])
 random_input = tf.random.uniform((images.shape[0], input_dim[0], input_dim[1], input_dim[2]), minval=0, maxval=1)
 
 to_load_model = input("Do you need load model from file? (y/n)") == "y"
