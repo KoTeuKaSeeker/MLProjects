@@ -1,5 +1,5 @@
 import os
-#os.environ['TF_CPP_MIN_LOG'] = "2"
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = "2"
 
 from PIL import Image
 import numpy as np
